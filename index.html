@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <title>Статистика казино</title>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
@@ -16,87 +15,152 @@ font-family:Arial;
 text-align:center;
 }
 
-.table{
+/* layout */
+
+.main{
 display:flex;
 justify-content:center;
+gap:30px;
 margin-top:20px;
+}
+
+/* roulette grid */
+
+.table{
+display:flex;
 }
 
 .zeros{
 display:flex;
 flex-direction:column;
-margin-right:5px;
 }
 
 .grid{
 display:grid;
-grid-template-columns: repeat(12, 55px);
-grid-template-rows: repeat(3, 55px);
-gap:4px;
+grid-template-columns: repeat(12,55px);
+grid-template-rows: repeat(3,55px);
+gap:3px;
 }
+
+/* buttons with WHITE BORDER */
 
 button{
 width:55px;
 height:55px;
-border:none;
+border:1px solid white;   /* ← БЕЛАЯ ОБВОДКА */
 font-weight:bold;
-cursor:pointer;
 color:white;
-font-size:16px;
+cursor:pointer;
+box-sizing:border-box;
 }
 
-.control-btn{
-background:#000;
-color:white;
-border:1px solid #444;
-width:auto;
-height:auto;
-padding:10px 20px;
-margin:5px;
-font-size:14px;
+.red{
+background:#c0392b;
+border:1px solid white;
+}
+
+.black{
+background:#111;
+border:1px solid white;
+}
+
+.green{
+background:#1e8449;
+border:1px solid white;
+}
+
+/* stat boxes */
+
+.statBox{
+background:#111;
+padding:10px;
+width:200px;
+border:1px solid white;
+}
+
+/* history */
+
+.history{
+display:flex;
+flex-wrap:wrap;
+gap:4px;
+background:#111;
+padding:10px;
+margin-top:20px;
+justify-content:center;
+border:1px solid white;
+}
+
+.hist{
+width:30px;
+height:30px;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:12px;
+border:1px solid white;
+}
+
+/* heatmap */
+
+#heatmap{
+display:grid;
+grid-template-columns: repeat(12,40px);
+gap:3px;
+justify-content:center;
+margin-top:20px;
+}
+
+.heat{
+height:40px;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:12px;
 font-weight:bold;
+color:white;
+border:1px solid white;
+}
+
+/* probability table */
+
+#probTable{
+display:grid;
+grid-template-columns: repeat(10,60px);
+gap:4px;
+justify-content:center;
+margin-top:10px;
+}
+
+#probTable div{
+background:#222;
+padding:5px;
+font-size:12px;
+border:1px solid white;
+}
+
+/* prediction */
+
+#predictionList{
+background:#111;
+padding:10px;
+width:200px;
+border:1px solid white;
+}
+
+/* control buttons */
+
+.control-btn{
+background:black;
+color:white;
+padding:10px 20px;
+border:1px solid white;
+margin:5px;
+cursor:pointer;
 }
 
 .control-btn:hover{
 background:#222;
-}
-
-.red{background:#c0392b;}
-.black{background:#111;}
-.green{background:#1e8449;}
-
-.history{
-background:#111;
-padding:10px;
-margin:20px;
-display:flex;
-flex-wrap:wrap;
-gap:4px;
-justify-content:center;
-}
-
-.hist{
-width:35px;
-height:35px;
-display:flex;
-justify-content:center;
-align-items:center;
-font-weight:bold;
-}
-
-.panel{
-display:flex;
-flex-wrap:wrap;
-justify-content:center;
-gap:15px;
-margin-top:20px;
-}
-
-.box{
-background:#111;
-padding:10px;
-width:260px;
-text-align:left;
 }
 
 </style>
@@ -118,48 +182,16 @@ text-align:left;
 
 <div class="history" id="history"></div>
 
-<div class="panel">
-
-<div class="box">
-<b>Prediction:</b><br>
-Число: <span id="predictionNumber">-</span><br>
-Вероятность: <span id="predictionProb">-</span>
+<div id="predictionList">
+<b>TOP-5 Prediction</b>
+<div id="predictions"></div>
 </div>
 
-<div class="box">
-<b>Цвета:</b><br>
-Red: <span id="probRed">0</span>%<br>
-Black: <span id="probBlack">0</span>%<br>
-Green: <span id="probGreen">0</span>%
-</div>
+<h3>Heatmap</h3>
+<div id="heatmap"></div>
 
-<div class="box">
-<b>Сектора:</b><br>
-1-12: <span id="probS1">0</span>%<br>
-13-24: <span id="probS2">0</span>%<br>
-25-36: <span id="probS3">0</span>%
-</div>
-
-<div class="box">
-<b>Линии:</b><br>
-Col1: <span id="probC1">0</span>%<br>
-Col2: <span id="probC2">0</span>%<br>
-Col3: <span id="probC3">0</span>%
-</div>
-
-<div class="box">
-<b>Половины:</b><br>
-1-18: <span id="probH1">0</span>%<br>
-19-36: <span id="probH2">0</span>%
-</div>
-
-<div class="box">
-<b>Четность:</b><br>
-Even: <span id="probEven">0</span>%<br>
-Odd: <span id="probOdd">0</span>%
-</div>
-
-</div>
+<h3>Probability table</h3>
+<div id="probTable"></div>
 
 <br>
 
@@ -175,22 +207,12 @@ Odd: <span id="probOdd">0</span>%
 const redNums=[1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
 
 let history=[];
-
-let stats={
-red:0,black:0,green:0,
-s1:0,s2:0,s3:0,
-c1:0,c2:0,c3:0,
-h1:0,h2:0,
-even:0,odd:0
-};
-
 let numberCount={};
 
 for(let i=0;i<=36;i++) numberCount[i]=0;
 numberCount["00"]=0;
 
-
-// создать стол
+/* create grid */
 
 const grid=document.getElementById("grid");
 
@@ -199,69 +221,50 @@ for(let c=0;c<12;c++){
 
 let n=r+c*3;
 
-let b=document.createElement("button");
+let btn=document.createElement("button");
 
-b.innerText=n;
-b.className=getColor(n);
+btn.innerText=n;
+btn.className=getColor(n);
+btn.onclick=()=>addNumber(n);
 
-b.onclick=()=>addNumber(n);
-
-grid.appendChild(b);
+grid.appendChild(btn);
 
 }
 }
 
-
-// цвет
+/* color */
 
 function getColor(n){
-
 if(n=="0"||n=="00") return "green";
-
 return redNums.includes(Number(n))?"red":"black";
-
 }
 
-
-// добавить
+/* add number */
 
 function addNumber(n){
 
-let color=getColor(n);
-
-history.push({number:n,color});
-
-stats[color]++;
-
-if(n>=1 && n<=12) stats.s1++;
-if(n>=13 && n<=24) stats.s2++;
-if(n>=25 && n<=36) stats.s3++;
-
-if(n%3==1) stats.c1++;
-if(n%3==2) stats.c2++;
-if(n%3==0) stats.c3++;
-
-if(n>=1 && n<=18) stats.h1++;
-if(n>=19 && n<=36) stats.h2++;
-
-if(n%2==0) stats.even++;
-else stats.odd++;
-
+history.push({number:n,color:getColor(n)});
 numberCount[n]++;
 
 render();
-
 saveLocal();
 
 }
 
-
-// render
+/* render */
 
 function render(){
 
-let div=document.getElementById("history");
+renderHistory();
+updateHeatmap();
+updateProbTable();
+updatePredictions();
 
+}
+
+function renderHistory(){
+
+let div=document.getElementById("history");
 div.innerHTML="";
 
 history.forEach(h=>{
@@ -275,71 +278,79 @@ div.appendChild(el);
 
 });
 
-updateProbabilities();
-
-updatePrediction();
-
 }
 
+/* heatmap */
 
-// вероятности
+function updateHeatmap(){
 
-function updateProbabilities(){
+let h=document.getElementById("heatmap");
+h.innerHTML="";
 
-let total=history.length || 1;
-
-document.getElementById("probRed").innerText=((stats.red/total)*100).toFixed(1);
-document.getElementById("probBlack").innerText=((stats.black/total)*100).toFixed(1);
-document.getElementById("probGreen").innerText=((stats.green/total)*100).toFixed(1);
-
-document.getElementById("probS1").innerText=((stats.s1/total)*100).toFixed(1);
-document.getElementById("probS2").innerText=((stats.s2/total)*100).toFixed(1);
-document.getElementById("probS3").innerText=((stats.s3/total)*100).toFixed(1);
-
-document.getElementById("probC1").innerText=((stats.c1/total)*100).toFixed(1);
-document.getElementById("probC2").innerText=((stats.c2/total)*100).toFixed(1);
-document.getElementById("probC3").innerText=((stats.c3/total)*100).toFixed(1);
-
-document.getElementById("probH1").innerText=((stats.h1/total)*100).toFixed(1);
-document.getElementById("probH2").innerText=((stats.h2/total)*100).toFixed(1);
-
-document.getElementById("probEven").innerText=((stats.even/total)*100).toFixed(1);
-document.getElementById("probOdd").innerText=((stats.odd/total)*100).toFixed(1);
-
-}
-
-
-// prediction
-
-function updatePrediction(){
-
-let total=history.length;
-
-if(total==0) return;
-
-let best="-";
-let bestScore=0;
+let total=history.length||1;
 
 Object.keys(numberCount).forEach(n=>{
 
-let score=numberCount[n]/total;
+let prob=numberCount[n]/total;
+let intensity=Math.floor(prob*255*3);
 
-if(score>bestScore){
+let el=document.createElement("div");
 
-bestScore=score;
-best=n;
+el.className="heat";
+el.style.background=`rgb(${intensity},0,0)`;
+el.innerText=n;
 
-}
+h.appendChild(el);
 
 });
 
-document.getElementById("predictionNumber").innerText=best;
-document.getElementById("predictionProb").innerText=(bestScore*100).toFixed(2)+"%";
+}
+
+/* probability table */
+
+function updateProbTable(){
+
+let t=document.getElementById("probTable");
+t.innerHTML="";
+
+let total=history.length||1;
+
+Object.keys(numberCount).forEach(n=>{
+
+let el=document.createElement("div");
+el.innerText=n+" "+((numberCount[n]/total)*100).toFixed(1)+"%";
+
+t.appendChild(el);
+
+});
 
 }
 
+/* prediction */
 
-// storage
+function updatePredictions(){
+
+let total=history.length||1;
+
+let arr=Object.keys(numberCount).map(n=>({
+number:n,
+prob:numberCount[n]/total
+}));
+
+arr.sort((a,b)=>b.prob-a.prob);
+
+let top=arr.slice(0,5);
+
+let div=document.getElementById("predictions");
+div.innerHTML="";
+
+top.forEach(x=>{
+div.innerHTML+=x.number+" ("+(x.prob*100).toFixed(2)+"%)<br>";
+});
+
+}
+
+/* storage */
 
 function saveLocal(){
 localStorage.setItem("roulette",JSON.stringify(history));
@@ -350,17 +361,14 @@ function loadLocal(){
 let d=localStorage.getItem("roulette");
 
 if(d){
-
 JSON.parse(d).forEach(x=>addNumber(x.number));
-
 }
 
 }
 
 loadLocal();
 
-
-// export
+/* export */
 
 function exportExcel(){
 
@@ -378,51 +386,37 @@ function saveJSON(){
 let blob=new Blob([JSON.stringify(history)],{type:"application/json"});
 
 let a=document.createElement("a");
-
 a.href=URL.createObjectURL(blob);
-
 a.download="roulette.json";
-
 a.click();
 
 }
 
 function importJSON(){
-
 document.getElementById("fileInput").click();
-
 }
 
 document.getElementById("fileInput").onchange=function(e){
-
-let file=e.target.files[0];
 
 let reader=new FileReader();
 
 reader.onload=function(){
 
 clearAll();
-
 JSON.parse(reader.result).forEach(x=>addNumber(x.number));
 
 };
 
-reader.readAsText(file);
+reader.readAsText(e.target.files[0]);
 
 };
-
 
 function clearAll(){
 
 history=[];
-
-for(let k in stats) stats[k]=0;
-
-for(let i=0;i<=36;i++) numberCount[i]=0;
-numberCount["00"]=0;
+for(let k in numberCount) numberCount[k]=0;
 
 render();
-
 saveLocal();
 
 }
