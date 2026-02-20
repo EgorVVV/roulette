@@ -2,46 +2,108 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Roulette Analyzer PRO</title>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
 
+/* BODY */
+
 body{
 background:#0f3b2f;
 color:white;
 font-family:Arial;
 margin:0;
-padding:0;
+overflow-x:hidden;
 }
 
-/* центрирование всего */
+/* HAMBURGER */
+
+.menuButton{
+position:fixed;
+top:15px;
+right:15px;
+font-size:28px;
+cursor:pointer;
+z-index:1002;
+background:black;
+padding:8px 14px;
+border:3px solid white;
+border-radius:6px;
+}
+
+/* OVERLAY */
+
+.overlay{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.6);
+opacity:0;
+pointer-events:none;
+transition:0.3s;
+z-index:999;
+}
+
+.overlay.show{
+opacity:1;
+pointer-events:auto;
+}
+
+/* SIDE MENU */
+
+.sideMenu{
+position:fixed;
+top:0;
+right:-260px;
+width:260px;
+height:100%;
+background:#111;
+border-left:3px solid white;
+padding-top:70px;
+transition:0.3s;
+z-index:1001;
+}
+
+.sideMenu.open{
+right:0;
+}
+
+.sideMenu button{
+display:block;
+width:85%;
+margin:12px auto;
+padding:14px;
+background:black;
+color:white;
+border:2px solid white;
+font-size:16px;
+cursor:pointer;
+border-radius:6px;
+}
+
+.sideMenu button:hover{
+background:#222;
+}
+
+/* CENTER CONTENT */
 
 .container{
 display:flex;
 flex-direction:column;
 align-items:center;
-justify-content:center;
-width:100%;
-margin-top:20px;
+padding:20px;
 }
 
-/* layout */
-
-.main{
-display:flex;
-gap:40px;
-align-items:flex-start;
-justify-content:center;
-}
-
-/* поле рулетки */
+/* TABLE */
 
 .table{
 display:flex;
 justify-content:center;
-align-items:center;
 }
 
 .zeros{
@@ -58,47 +120,24 @@ gap:4px;
 margin-left:4px;
 }
 
-/* клетки */
+/* NUMBER BUTTONS */
 
-button{
+.number{
 width:60px;
 height:60px;
-border:3px solid white;   /* ТОЛСТАЯ ОБВОДКА */
+border:3px solid white;
+color:white;
 font-weight:bold;
 font-size:16px;
-color:white;
 cursor:pointer;
-box-sizing:border-box;
+border-radius:4px;
 }
 
-.red{
-background:#c0392b;
-}
+.red{background:#c0392b;}
+.black{background:#111;}
+.green{background:#1e8449;}
 
-.black{
-background:#111;
-}
-
-.green{
-background:#1e8449;
-}
-
-/* панели статистики */
-
-.statsPanel{
-display:flex;
-flex-direction:column;
-gap:10px;
-}
-
-.statBox{
-background:#111;
-padding:10px;
-border:3px solid white;
-width:200px;
-}
-
-/* history */
+/* HISTORY */
 
 .history{
 display:flex;
@@ -107,181 +146,132 @@ gap:4px;
 background:#111;
 padding:10px;
 margin-top:20px;
-justify-content:center;
 border:3px solid white;
-width:800px;
+max-width:90vw;
+justify-content:center;
 }
 
 .hist{
 width:32px;
 height:32px;
+border:2px solid white;
 display:flex;
 align-items:center;
 justify-content:center;
-border:2px solid white;
+font-size:13px;
+border-radius:4px;
 }
 
-/* heatmap */
+/* MOBILE OPTIMIZATION */
 
-#heatmap{
-display:grid;
-grid-template-columns: repeat(12,45px);
-gap:4px;
-justify-content:center;
-margin-top:20px;
+@media (max-width:600px){
+
+.grid{
+grid-template-columns: repeat(12,40px);
+grid-template-rows: repeat(3,40px);
 }
 
-.heat{
-height:45px;
-display:flex;
-align-items:center;
-justify-content:center;
-border:2px solid white;
+.number{
+width:40px;
+height:40px;
 font-size:12px;
 }
 
-/* probability table */
-
-#probTable{
-display:grid;
-grid-template-columns: repeat(10,65px);
-gap:4px;
-justify-content:center;
-margin-top:20px;
+.hist{
+width:24px;
+height:24px;
+font-size:10px;
 }
 
-#probTable div{
-background:#222;
-border:2px solid white;
-padding:5px;
+.menuButton{
+font-size:24px;
+padding:6px 10px;
 }
 
-/* prediction */
-
-#predictionBox{
-background:#111;
-border:3px solid white;
-padding:10px;
-width:200px;
-}
-
-/* control buttons */
-
-.control-btn{
-background:black;
-color:white;
-border:3px solid white;
-padding:10px 20px;
-margin:5px;
-cursor:pointer;
-}
-
-.control-btn:hover{
-background:#222;
 }
 
 </style>
 </head>
 <body>
 
+<!-- OVERLAY -->
+
+<div class="overlay" id="overlay" onclick="closeMenu()"></div>
+
+<!-- MENU BUTTON -->
+
+<div class="menuButton" onclick="toggleMenu()">☰</div>
+
+<!-- SIDE MENU -->
+
+<div class="sideMenu" id="sideMenu">
+
+<button onclick="exportExcel()">Excel</button>
+
+<button onclick="saveJSON()">Save JSON</button>
+
+<button onclick="importJSON()">Import JSON</button>
+
+<button onclick="clearAll()">Clear</button>
+
+</div>
+
+<input type="file" id="fileInput" hidden>
+
 <div class="container">
 
 <h2>Roulette Analyzer PRO</h2>
 
-<div class="main">
-
-<div class="statsPanel">
-
-<div class="statBox">
-<b>Colors</b><br>
-Red: <span id="countRed">0</span><br>
-Black: <span id="countBlack">0</span><br>
-Green: <span id="countGreen">0</span>
-</div>
-
-<div class="statBox">
-<b>Sectors</b><br>
-1-12: <span id="countS1">0</span><br>
-13-24: <span id="countS2">0</span><br>
-25-36: <span id="countS3">0</span>
-</div>
-
-<div class="statBox">
-<b>Lines</b><br>
-Col1: <span id="countC1">0</span><br>
-Col2: <span id="countC2">0</span><br>
-Col3: <span id="countC3">0</span>
-</div>
-
-<div class="statBox">
-<b>Even / Odd</b><br>
-Even: <span id="countEven">0</span><br>
-Odd: <span id="countOdd">0</span>
-</div>
-
-<div class="statBox">
-<b>Halves</b><br>
-1-18: <span id="countH1">0</span><br>
-19-36: <span id="countH2">0</span>
-</div>
-
-</div>
-
 <div class="table">
 
 <div class="zeros">
-<button class="green" onclick="addNumber('0')">0</button>
-<button class="green" onclick="addNumber('00')">00</button>
+
+<button class="number green" onclick="addNumber('0')">0</button>
+
+<button class="number green" onclick="addNumber('00')">00</button>
+
 </div>
 
 <div class="grid" id="grid"></div>
 
 </div>
 
-<div id="predictionBox">
-<b>TOP-5 Prediction</b>
-<div id="predictions"></div>
-</div>
-
-</div>
-
 <div class="history" id="history"></div>
-
-<h3>Heatmap</h3>
-<div id="heatmap"></div>
-
-<h3>Probability table</h3>
-<div id="probTable"></div>
-
-<br>
-
-<button class="control-btn" onclick="exportExcel()">Excel</button>
-<button class="control-btn" onclick="saveJSON()">Save JSON</button>
-<button class="control-btn" onclick="importJSON()">Import JSON</button>
-<button class="control-btn" onclick="clearAll()">Clear</button>
-
-<input type="file" id="fileInput" hidden>
 
 </div>
 
 <script>
 
+/* MENU CONTROL */
+
+function toggleMenu(){
+
+const menu=document.getElementById("sideMenu");
+const overlay=document.getElementById("overlay");
+
+menu.classList.toggle("open");
+overlay.classList.toggle("show");
+
+}
+
+function closeMenu(){
+
+document.getElementById("sideMenu").classList.remove("open");
+document.getElementById("overlay").classList.remove("show");
+
+}
+
+/* DATA */
+
 const redNums=[1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
 
 let history=[];
-
-let stats={
-red:0,black:0,green:0,
-s1:0,s2:0,s3:0,
-c1:0,c2:0,c3:0,
-even:0,odd:0,
-h1:0,h2:0
-};
-
 let numberCount={};
 
 for(let i=0;i<=36;i++) numberCount[i]=0;
 numberCount["00"]=0;
+
+/* CREATE GRID */
 
 const grid=document.getElementById("grid");
 
@@ -293,7 +283,7 @@ let n=r+c*3;
 let btn=document.createElement("button");
 
 btn.innerText=n;
-btn.className=getColor(n);
+btn.className="number "+getColor(n);
 
 btn.onclick=()=>addNumber(n);
 
@@ -302,6 +292,8 @@ grid.appendChild(btn);
 }
 }
 
+/* COLOR */
+
 function getColor(n){
 
 if(n=="0"||n=="00") return "green";
@@ -309,71 +301,28 @@ return redNums.includes(Number(n))?"red":"black";
 
 }
 
+/* ADD */
+
 function addNumber(n){
 
-let color=getColor(n);
-
-history.push({number:n,color});
-
-stats[color]++;
-
-if(n>=1&&n<=12) stats.s1++;
-if(n>=13&&n<=24) stats.s2++;
-if(n>=25&&n<=36) stats.s3++;
-
-if(n%3==1) stats.c1++;
-if(n%3==2) stats.c2++;
-if(n%3==0) stats.c3++;
-
-if(n%2==0) stats.even++;
-else stats.odd++;
-
-if(n>=1&&n<=18) stats.h1++;
-if(n>=19&&n<=36) stats.h2++;
+history.push({
+number:n,
+color:getColor(n)
+});
 
 numberCount[n]++;
 
 render();
-
 saveLocal();
 
 }
 
+/* RENDER */
+
 function render(){
 
-updateCounters();
-renderHistory();
-updateHeatmap();
-updateProbTable();
-updatePrediction();
-
-}
-
-function updateCounters(){
-
-set("countRed",stats.red);
-set("countBlack",stats.black);
-set("countGreen",stats.green);
-
-set("countS1",stats.s1);
-set("countS2",stats.s2);
-set("countS3",stats.s3);
-
-set("countC1",stats.c1);
-set("countC2",stats.c2);
-set("countC3",stats.c3);
-
-set("countEven",stats.even);
-set("countOdd",stats.odd);
-
-set("countH1",stats.h1);
-set("countH2",stats.h2);
-
-}
-
-function renderHistory(){
-
 let div=document.getElementById("history");
+
 div.innerHTML="";
 
 history.forEach(h=>{
@@ -389,81 +338,12 @@ div.appendChild(el);
 
 }
 
-function updateHeatmap(){
-
-let h=document.getElementById("heatmap");
-h.innerHTML="";
-
-let total=history.length||1;
-
-Object.keys(numberCount).forEach(n=>{
-
-let prob=numberCount[n]/total;
-
-let intensity=Math.floor(prob*255*3);
-
-let el=document.createElement("div");
-
-el.className="heat";
-
-el.style.background=`rgb(${intensity},0,0)`;
-
-el.innerText=n;
-
-h.appendChild(el);
-
-});
-
-}
-
-function updateProbTable(){
-
-let t=document.getElementById("probTable");
-t.innerHTML="";
-
-let total=history.length||1;
-
-Object.keys(numberCount).forEach(n=>{
-
-let el=document.createElement("div");
-
-el.innerText=n+" "+((numberCount[n]/total)*100).toFixed(1)+"%";
-
-t.appendChild(el);
-
-});
-
-}
-
-function updatePrediction(){
-
-let total=history.length||1;
-
-let arr=Object.keys(numberCount).map(n=>({
-number:n,
-prob:numberCount[n]/total
-}));
-
-arr.sort((a,b)=>b.prob-a.prob);
-
-let top=arr.slice(0,5);
-
-let div=document.getElementById("predictions");
-
-div.innerHTML="";
-
-top.forEach(x=>{
-div.innerHTML+=x.number+" ("+(x.prob*100).toFixed(2)+"%)<br>";
-});
-
-}
-
-function set(id,val){
-document.getElementById(id).innerText=val;
-}
+/* STORAGE */
 
 function saveLocal(){
+
 localStorage.setItem("roulette",JSON.stringify(history));
+
 }
 
 function loadLocal(){
@@ -471,16 +351,23 @@ function loadLocal(){
 let d=localStorage.getItem("roulette");
 
 if(d){
+
 JSON.parse(d).forEach(x=>addNumber(x.number));
+
 }
 
 }
 
 loadLocal();
 
+/* EXPORT */
+
 function exportExcel(){
 
+closeMenu();
+
 let ws=XLSX.utils.json_to_sheet(history);
+
 let wb=XLSX.utils.book_new();
 
 XLSX.utils.book_append_sheet(wb,ws,"history");
@@ -491,18 +378,26 @@ XLSX.writeFile(wb,"roulette.xlsx");
 
 function saveJSON(){
 
+closeMenu();
+
 let blob=new Blob([JSON.stringify(history)],{type:"application/json"});
 
 let a=document.createElement("a");
 
 a.href=URL.createObjectURL(blob);
+
 a.download="roulette.json";
+
 a.click();
 
 }
 
 function importJSON(){
+
+closeMenu();
+
 document.getElementById("fileInput").click();
+
 }
 
 document.getElementById("fileInput").onchange=function(e){
@@ -521,11 +416,13 @@ reader.readAsText(e.target.files[0]);
 
 };
 
+/* CLEAR */
+
 function clearAll(){
 
-history=[];
+closeMenu();
 
-for(let k in stats) stats[k]=0;
+history=[];
 for(let k in numberCount) numberCount[k]=0;
 
 render();
