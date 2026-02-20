@@ -3,43 +3,43 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Roulette Analyzer PRO</title>
+
+<title>Roulette Analyzer</title>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
-
-/* BODY */
 
 body{
 background:#0f3b2f;
 color:white;
 font-family:Arial;
 margin:0;
-overflow-x:hidden;
 }
 
-/* HAMBURGER */
+.container{
+display:flex;
+flex-direction:column;
+align-items:center;
+margin-top:20px;
+}
+
+/* menu */
 
 .menuButton{
 position:fixed;
 top:15px;
 right:15px;
+background:black;
+border:3px solid white;
+padding:8px 14px;
 font-size:28px;
 cursor:pointer;
 z-index:1002;
-background:black;
-padding:8px 14px;
-border:3px solid white;
-border-radius:6px;
 }
-
-/* OVERLAY */
 
 .overlay{
 position:fixed;
-top:0;
-left:0;
 width:100%;
 height:100%;
 background:rgba(0,0,0,0.6);
@@ -53,8 +53,6 @@ z-index:999;
 opacity:1;
 pointer-events:auto;
 }
-
-/* SIDE MENU */
 
 .sideMenu{
 position:fixed;
@@ -75,35 +73,27 @@ right:0;
 
 .sideMenu button{
 display:block;
-width:85%;
-margin:12px auto;
-padding:14px;
+width:80%;
+margin:10px auto;
+padding:12px;
 background:black;
 color:white;
 border:2px solid white;
-font-size:16px;
 cursor:pointer;
-border-radius:6px;
 }
 
-.sideMenu button:hover{
-background:#222;
-}
+/* layout */
 
-/* CENTER CONTENT */
-
-.container{
+.main{
 display:flex;
-flex-direction:column;
-align-items:center;
-padding:20px;
+gap:20px;
+align-items:flex-start;
 }
 
-/* TABLE */
+/* table */
 
 .table{
 display:flex;
-justify-content:center;
 }
 
 .zeros{
@@ -117,101 +107,85 @@ display:grid;
 grid-template-columns: repeat(12,60px);
 grid-template-rows: repeat(3,60px);
 gap:4px;
-margin-left:4px;
 }
-
-/* NUMBER BUTTONS */
 
 .number{
 width:60px;
 height:60px;
 border:3px solid white;
 color:white;
-font-weight:bold;
-font-size:16px;
+position:relative;
 cursor:pointer;
-border-radius:4px;
 }
+
+.cellNumber{
+font-weight:bold;
+}
+
+.cellProb{
+position:absolute;
+bottom:2px;
+right:4px;
+font-size:10px;
+}
+
+/* colors */
 
 .red{background:#c0392b;}
 .black{background:#111;}
 .green{background:#1e8449;}
 
-/* HISTORY */
+/* stats */
 
-.history{
+.stats{
 display:flex;
-flex-wrap:wrap;
-gap:4px;
+flex-direction:column;
+gap:10px;
+}
+
+.box{
 background:#111;
-padding:10px;
-margin-top:20px;
 border:3px solid white;
-max-width:90vw;
-justify-content:center;
+padding:10px;
+width:200px;
 }
 
-.hist{
-width:32px;
-height:32px;
-border:2px solid white;
+/* heatmap sectors */
+
+.sectorHeat{
 display:flex;
-align-items:center;
-justify-content:center;
-font-size:13px;
-border-radius:4px;
+gap:10px;
+margin-top:10px;
 }
 
-/* MOBILE OPTIMIZATION */
-
-@media (max-width:600px){
-
-.grid{
-grid-template-columns: repeat(12,40px);
-grid-template-rows: repeat(3,40px);
+.sector{
+padding:10px;
+border:3px solid white;
+width:100px;
 }
 
-.number{
-width:40px;
-height:40px;
-font-size:12px;
-}
+/* prediction */
 
-.hist{
-width:24px;
-height:24px;
-font-size:10px;
-}
-
-.menuButton{
-font-size:24px;
-padding:6px 10px;
-}
-
+.prediction{
+background:#111;
+border:3px solid white;
+padding:10px;
+width:200px;
 }
 
 </style>
 </head>
 <body>
 
-<!-- OVERLAY -->
-
-<div class="overlay" id="overlay" onclick="closeMenu()"></div>
-
-<!-- MENU BUTTON -->
-
 <div class="menuButton" onclick="toggleMenu()">☰</div>
 
-<!-- SIDE MENU -->
+<div class="overlay" id="overlay" onclick="closeMenu()"></div>
 
 <div class="sideMenu" id="sideMenu">
 
 <button onclick="exportExcel()">Excel</button>
-
 <button onclick="saveJSON()">Save JSON</button>
-
 <button onclick="importJSON()">Import JSON</button>
-
 <button onclick="clearAll()">Clear</button>
 
 </div>
@@ -220,15 +194,45 @@ padding:6px 10px;
 
 <div class="container">
 
-<h2>Roulette Analyzer PRO</h2>
+<h2>Roulette Analyzer</h2>
+
+<div class="main">
+
+<div class="stats">
+
+<div class="box">
+Bias strength:<br>
+<span id="biasMeter">NONE</span>
+</div>
+
+<div class="box">
+Accuracy:<br>
+<span id="accuracy">0%</span>
+</div>
+
+<div class="sectorHeat">
+
+<div class="sector" id="sector1">1-12</div>
+<div class="sector" id="sector2">13-24</div>
+<div class="sector" id="sector3">25-36</div>
+
+</div>
+
+</div>
 
 <div class="table">
 
 <div class="zeros">
 
-<button class="number green" onclick="addNumber('0')">0</button>
+<button class="number green" onclick="addNumber('0')">
+<div class="cellNumber">0</div>
+<div class="cellProb" id="prob_0">0%</div>
+</button>
 
-<button class="number green" onclick="addNumber('00')">00</button>
+<button class="number green" onclick="addNumber('00')">
+<div class="cellNumber">00</div>
+<div class="cellProb" id="prob_00">0%</div>
+</button>
 
 </div>
 
@@ -236,44 +240,37 @@ padding:6px 10px;
 
 </div>
 
-<div class="history" id="history"></div>
+<div class="prediction">
+
+<b>Prediction TOP-5</b>
+
+<div id="prediction"></div>
+
+</div>
+
+</div>
 
 </div>
 
 <script>
 
-/* MENU CONTROL */
-
-function toggleMenu(){
-
-const menu=document.getElementById("sideMenu");
-const overlay=document.getElementById("overlay");
-
-menu.classList.toggle("open");
-overlay.classList.toggle("show");
-
-}
-
-function closeMenu(){
-
-document.getElementById("sideMenu").classList.remove("open");
-document.getElementById("overlay").classList.remove("show");
-
-}
-
-/* DATA */
+/* data */
 
 const redNums=[1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
 
 let history=[];
-let numberCount={};
+let count={};
 
-for(let i=0;i<=36;i++) numberCount[i]=0;
-numberCount["00"]=0;
+let predictionTotal=0;
+let predictionCorrect=0;
+let lastPrediction=null;
 
-/* CREATE GRID */
+let sectors=[0,0,0];
 
-const grid=document.getElementById("grid");
+for(let i=0;i<=36;i++) count[i]=0;
+count["00"]=0;
+
+/* create grid */
 
 for(let r=3;r>=1;r--){
 for(let c=0;c<12;c++){
@@ -282,68 +279,186 @@ let n=r+c*3;
 
 let btn=document.createElement("button");
 
-btn.innerText=n;
 btn.className="number "+getColor(n);
 
 btn.onclick=()=>addNumber(n);
+
+btn.innerHTML=`
+<div class="cellNumber">${n}</div>
+<div class="cellProb" id="prob_${n}">0%</div>
+`;
 
 grid.appendChild(btn);
 
 }
 }
 
-/* COLOR */
+/* color */
 
 function getColor(n){
-
 if(n=="0"||n=="00") return "green";
 return redNums.includes(Number(n))?"red":"black";
-
 }
 
-/* ADD */
+/* add */
 
 function addNumber(n){
 
-history.push({
-number:n,
-color:getColor(n)
-});
+if(lastPrediction!=null){
 
-numberCount[n]++;
+predictionTotal++;
+if(lastPrediction==n) predictionCorrect++;
+
+}
+
+history.push(n);
+
+count[n]++;
+
+if(n>=1&&n<=12) sectors[0]++;
+if(n>=13&&n<=24) sectors[1]++;
+if(n>=25&&n<=36) sectors[2]++;
 
 render();
+
 saveLocal();
 
 }
 
-/* RENDER */
+/* render */
 
 function render(){
 
-let div=document.getElementById("history");
+let total=history.length||1;
 
-div.innerHTML="";
+updateCells(total);
+updatePrediction(total);
+updateAccuracy();
+updateBias(total);
+updateSectorHeat(total);
 
-history.forEach(h=>{
+}
 
-let el=document.createElement("div");
+/* adaptive prediction */
 
-el.className="hist "+h.color;
-el.innerText=h.number;
+function updatePrediction(total){
 
-div.appendChild(el);
+let short=history.slice(-30);
+
+let shortCount={};
+
+short.forEach(n=>{
+
+shortCount[n]=(shortCount[n]||0)+1;
+
+});
+
+let arr=Object.keys(count).map(n=>{
+
+let longScore=count[n]/total;
+let shortScore=(shortCount[n]||0)/30;
+
+let score=(longScore*0.6)+(shortScore*0.4);
+
+return{n,score};
+
+});
+
+arr.sort((a,b)=>b.score-a.score);
+
+lastPrediction=arr[0].n;
+
+prediction.innerHTML="";
+
+arr.slice(0,5).forEach(x=>{
+
+prediction.innerHTML+=
+x.n+" ("+(x.score*100).toFixed(2)+"%)<br>";
 
 });
 
 }
 
-/* STORAGE */
+/* accuracy */
+
+function updateAccuracy(){
+
+let acc=predictionTotal==0?0:
+predictionCorrect/predictionTotal*100;
+
+accuracy.innerText=acc.toFixed(1)+"%";
+
+}
+
+/* bias meter */
+
+function updateBias(total){
+
+let expected=total/37;
+
+let max=Math.max(...Object.values(count));
+
+let bias=(max-expected)/expected;
+
+let level="NONE";
+
+if(bias>0.3) level="STRONG";
+else if(bias>0.2) level="MEDIUM";
+else if(bias>0.1) level="WEAK";
+
+biasMeter.innerText=
+level+" ("+(bias*100).toFixed(1)+"%)";
+
+}
+
+/* heatmap cells */
+
+function updateCells(total){
+
+Object.keys(count).forEach(n=>{
+
+let prob=count[n]/total;
+
+let cell=document.getElementById("prob_"+n);
+
+if(cell){
+
+cell.innerText=(prob*100).toFixed(1)+"%";
+
+let intensity=prob*500;
+
+cell.parentElement.style.boxShadow=
+`inset 0 0 ${intensity}px rgba(255,0,0,0.8)`;
+
+}
+
+});
+
+}
+
+/* sector heatmap */
+
+function updateSectorHeat(total){
+
+sectors.forEach((v,i)=>{
+
+let prob=v/total;
+
+let el=document.getElementById("sector"+(i+1));
+
+let intensity=prob*500;
+
+el.style.background=
+`rgba(255,0,0,${prob})`;
+
+});
+
+}
+
+/* storage */
 
 function saveLocal(){
-
 localStorage.setItem("roulette",JSON.stringify(history));
-
 }
 
 function loadLocal(){
@@ -351,22 +466,34 @@ function loadLocal(){
 let d=localStorage.getItem("roulette");
 
 if(d){
-
-JSON.parse(d).forEach(x=>addNumber(x.number));
-
+JSON.parse(d).forEach(addNumber);
 }
 
 }
 
 loadLocal();
 
-/* EXPORT */
+/* menu */
+
+function toggleMenu(){
+
+sideMenu.classList.toggle("open");
+overlay.classList.toggle("show");
+
+}
+
+function closeMenu(){
+
+sideMenu.classList.remove("open");
+overlay.classList.remove("show");
+
+}
+
+/* export */
 
 function exportExcel(){
 
-closeMenu();
-
-let ws=XLSX.utils.json_to_sheet(history);
+let ws=XLSX.utils.json_to_sheet(history.map(n=>({number:n})));
 
 let wb=XLSX.utils.book_new();
 
@@ -378,9 +505,7 @@ XLSX.writeFile(wb,"roulette.xlsx");
 
 function saveJSON(){
 
-closeMenu();
-
-let blob=new Blob([JSON.stringify(history)],{type:"application/json"});
+let blob=new Blob([JSON.stringify(history)]);
 
 let a=document.createElement("a");
 
@@ -394,21 +519,19 @@ a.click();
 
 function importJSON(){
 
-closeMenu();
-
-document.getElementById("fileInput").click();
+fileInput.click();
 
 }
 
-document.getElementById("fileInput").onchange=function(e){
+fileInput.onchange=e=>{
 
 let reader=new FileReader();
 
-reader.onload=function(){
+reader.onload=()=>{
 
 clearAll();
 
-JSON.parse(reader.result).forEach(x=>addNumber(x.number));
+JSON.parse(reader.result).forEach(addNumber);
 
 };
 
@@ -416,14 +539,13 @@ reader.readAsText(e.target.files[0]);
 
 };
 
-/* CLEAR */
-
 function clearAll(){
 
-closeMenu();
-
 history=[];
-for(let k in numberCount) numberCount[k]=0;
+predictionTotal=0;
+predictionCorrect=0;
+
+for(let k in count) count[k]=0;
 
 render();
 saveLocal();
